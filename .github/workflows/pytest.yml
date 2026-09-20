@@ -1,0 +1,37 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+
+jobs:
+  pytest:
+    name: Run Pytest
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Checkout Versatile Thermostat dependency
+        uses: actions/checkout@v6
+        with:
+          repository: jmcollin78/versatile_thermostat
+          path: versatile_thermostat
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pytest-asyncio pytest-homeassistant-custom-component coverage homeassistant vtherm-api
+
+      - name: Run Pytest
+        env:
+          PYTHONPATH: ${{ github.workspace }}/versatile_thermostat:${{ github.workspace }}
+        run: pytest tests/

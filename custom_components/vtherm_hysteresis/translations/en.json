@@ -1,0 +1,45 @@
+{
+  "title": "Versatile Thermostat Hysteresis",
+  "config": {
+    "step": {
+      "global": {
+        "title": "Hysteresis defaults",
+        "data": {
+          "hysteresis_on": "Activation delta",
+          "hysteresis_off": "Deactivation delta",
+          "max_on_percent": "Active power (0.0–1.0)",
+          "min_on_percent": "Inactive power (0.0–1.0)"
+        }
+      },
+      "thermostat": {
+        "title": "Hysteresis per thermostat",
+        "data": {
+          "target_vtherm_unique_id": "Target thermostat",
+          "hysteresis_on": "Activation delta",
+          "hysteresis_off": "Deactivation delta",
+          "max_on_percent": "Active power (0.0–1.0)",
+          "min_on_percent": "Inactive power (0.0–1.0)"
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Only one Hysteresis global configuration is allowed."
+    },
+    "error": {
+      "invalid_entity": "The selected climate entity cannot be linked to a VT unique identifier."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Hysteresis defaults",
+        "data": {
+          "hysteresis_on": "Activation delta",
+          "hysteresis_off": "Deactivation delta",
+          "max_on_percent": "Active power (0.0–1.0)",
+          "min_on_percent": "Inactive power (0.0–1.0)"
+        }
+      }
+    }
+  }
+}

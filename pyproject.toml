@@ -1,0 +1,9 @@
+[project]
+name = "vtherm_hysteresis"
+version = "0.1.0"
+description = "Hysteresis plugin for Versatile Thermostat"
+requires-python = ">=3.13"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
