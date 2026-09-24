@@ -1,4 +1,4 @@
-"""Factory for the Hysteresis proportional algorithm plugin."""
+"""Factory for the tpi_hysteresis_regulation proportional algorithm plugin."""
 
 from __future__ import annotations
 
@@ -12,12 +12,12 @@ from .const import PROP_FUNCTION_TPI_HYSTERESIS
 from .handler import TpiHysteresisHandler
 
 
-class TpiTpiHysteresisFactory(InterfacePropAlgorithmFactory):
-    """Create Hysteresis handlers for VT runtime thermostats."""
+class TpiHysteresisFactory(InterfacePropAlgorithmFactory):
+    """Create TPI + hysteresis handlers for VT runtime thermostats."""
 
     @property
     def name(self) -> str:
-        """Return the Hysteresis proportional function identifier."""
+        """Return the TPI hysteresis proportional function identifier."""
         return PROP_FUNCTION_TPI_HYSTERESIS
 
     def create(

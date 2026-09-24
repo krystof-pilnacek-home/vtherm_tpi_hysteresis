@@ -18,7 +18,7 @@ from .const import (
     PROP_FUNCTION_TPI_HYSTERESIS,
 )
 from .device_link import cleanup_config_entry_devices
-from .factory import TpiTpiHysteresisFactory
+from .factory import TpiHysteresisFactory
 
 VT_DOMAIN = "versatile_thermostat"
 
@@ -43,7 +43,7 @@ def _register_factory(hass: HomeAssistant) -> bool:
         )
         return False
 
-    factory = TpiTpiHysteresisFactory()
+    factory = TpiHysteresisFactory()
     existing_factory = api.get_prop_algorithm(factory.name)
     if existing_factory is None:
         api.register_prop_algorithm(factory)
