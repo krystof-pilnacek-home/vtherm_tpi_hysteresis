@@ -1,4 +1,4 @@
-"""Config flow for vtherm_hysteresis."""
+"""Config flow for vtherm_tpi_hysteresis."""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ from .const import (
 
 
 def build_options_schema(defaults: dict[str, Any]) -> vol.Schema:
-    """Build the Hysteresis defaults schema."""
+    """Build the TPI Hysteresis defaults schema."""
     return vol.Schema(
         {
             vol.Optional(
@@ -84,7 +84,7 @@ def build_user_schema(defaults: dict[str, Any]) -> vol.Schema:
     return vol.Schema(schema)
 
 
-class HysteresisConfigFlow(ConfigFlow, domain=DOMAIN):
+class TpiHysteresisConfigFlow(ConfigFlow, domain=DOMAIN):
     """Manage Hysteresis plugin config entries."""
 
     VERSION = 1
@@ -96,7 +96,7 @@ class HysteresisConfigFlow(ConfigFlow, domain=DOMAIN):
             await self.async_set_unique_id(DOMAIN)
             self._abort_if_unique_id_configured()
             return self.async_create_entry(
-                title="Hysteresis defaults",
+                title="TPI Hysteresis defaults",
                 data=dict(DEFAULT_OPTIONS),
             )
 
@@ -108,7 +108,7 @@ class HysteresisConfigFlow(ConfigFlow, domain=DOMAIN):
         self._abort_if_unique_id_configured()
 
         if user_input is not None:
-            return self.async_create_entry(title="Hysteresis defaults", data=user_input)
+            return self.async_create_entry(title="TPI Hysteresis defaults", data=user_input)
 
         return self.async_show_form(
             step_id="global",
@@ -146,10 +146,10 @@ class HysteresisConfigFlow(ConfigFlow, domain=DOMAIN):
     @staticmethod
     def async_get_options_flow(config_entry):
         """Return the options flow handler."""
-        return HysteresisOptionsFlow(config_entry)
+        return TpiHysteresisOptionsFlow(config_entry)
 
 
-class HysteresisOptionsFlow(OptionsFlow):
+class TpiHysteresisOptionsFlow(OptionsFlow):
     """Edit Hysteresis plugin defaults."""
 
     def __init__(self, config_entry) -> None:

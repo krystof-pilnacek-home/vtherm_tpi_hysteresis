@@ -1,4 +1,4 @@
-"""The vtherm_hysteresis integration."""
+"""The vtherm_tpi_hysteresis integration."""
 
 from __future__ import annotations
 
@@ -15,10 +15,10 @@ from .const import (
     CONF_TARGET_VTHERM,
     DATA_FACTORY_REGISTERED,
     DOMAIN,
-    PROP_FUNCTION_HYSTERESIS,
+    PROP_FUNCTION_TPI_HYSTERESIS,
 )
 from .device_link import cleanup_config_entry_devices
-from .factory import HysteresisHandlerFactory
+from .factory import TpiTpiHysteresisFactory
 
 VT_DOMAIN = "versatile_thermostat"
 
@@ -43,7 +43,7 @@ def _register_factory(hass: HomeAssistant) -> bool:
         )
         return False
 
-    factory = HysteresisHandlerFactory()
+    factory = TpiTpiHysteresisFactory()
     existing_factory = api.get_prop_algorithm(factory.name)
     if existing_factory is None:
         api.register_prop_algorithm(factory)
@@ -56,7 +56,7 @@ def _unregister_factory(hass: HomeAssistant) -> None:
     """Unregister the Hysteresis factory from the shared VT API."""
     api = VThermAPI.get_vtherm_api(hass)
     if api is not None:
-        api.unregister_prop_algorithm(PROP_FUNCTION_HYSTERESIS)
+        api.unregister_prop_algorithm(PROP_FUNCTION_TPI_HYSTERESIS)
     _ensure_domain_data(hass)[DATA_FACTORY_REGISTERED] = False
 
 
@@ -79,7 +79,7 @@ async def _reload_hysteresis_vtherms(
 
     reload_tasks = []
     for entry in hass.config_entries.async_entries(VT_DOMAIN):
-        if entry.data.get(CONF_PROP_FUNCTION) != PROP_FUNCTION_HYSTERESIS:
+        if entry.data.get(CONF_PROP_FUNCTION) != PROP_FUNCTION_TPI_HYSTERESIS:
             continue
 
         if target_unique_id is not None:
@@ -95,14 +95,14 @@ async def _reload_hysteresis_vtherms(
 
 
 async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
-    """Set up vtherm_hysteresis from YAML."""
+    """Set up vtherm_tpi_hysteresis from YAML."""
     del config
     _register_factory(hass)
     return True
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up vtherm_hysteresis from a config entry."""
+    """Set up vtherm_tpi_hysteresis from a config entry."""
     _ensure_domain_data(hass)[entry.entry_id] = entry.entry_id
     cleanup_config_entry_devices(hass, entry.entry_id)
     _register_factory(hass)
@@ -122,7 +122,7 @@ async def _async_update_options(hass: HomeAssistant, entry: ConfigEntry) -> None
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Unload a vtherm_hysteresis config entry."""
+    """Unload a vtherm_tpi_hysteresis config entry."""
     data = _ensure_domain_data(hass)
     data.pop(entry.entry_id, None)
 

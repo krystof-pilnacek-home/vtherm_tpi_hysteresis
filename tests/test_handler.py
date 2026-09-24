@@ -4,8 +4,8 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
-from custom_components.vtherm_hysteresis.handler import HysteresisHandler
-from custom_components.vtherm_hysteresis.hysteresis.controller import HysteresisController
+from custom_components.vtherm_tpi_hysteresis.handler import TpiHysteresisHandler
+from custom_components.vtherm_tpi_hysteresis.tpi_hysteresis.controller import TpiHysteresisController
 
 
 def _make_thermostat() -> MagicMock:
@@ -30,8 +30,8 @@ async def test_control_heating_forces_cycle_restart_below_lower_threshold() -> N
     thermostat.current_temperature = 19.6
     scheduler = AsyncMock()
 
-    controller = HysteresisController(hysteresis_on=0.3, hysteresis_off=0.5)
-    handler = HysteresisHandler(thermostat)
+    controller = TpiHysteresisController(hysteresis_on=0.3, hysteresis_off=0.5)
+    handler = TpiHysteresisHandler(thermostat)
     handler._controller = controller
     handler._scheduler = scheduler
 
@@ -50,10 +50,10 @@ async def test_control_heating_forces_cycle_restart_above_upper_threshold() -> N
     thermostat.current_temperature = 20.6
     scheduler = AsyncMock()
 
-    controller = HysteresisController(hysteresis_on=0.3, hysteresis_off=0.5)
+    controller = TpiHysteresisController(hysteresis_on=0.3, hysteresis_off=0.5)
     controller.restore_state({"is_active": True, "hvac_mode": "heat", "last_reason": "manual"})
 
-    handler = HysteresisHandler(thermostat)
+    handler = TpiHysteresisHandler(thermostat)
     handler._controller = controller
     handler._scheduler = scheduler
 
@@ -73,8 +73,8 @@ async def test_control_heating_forces_cool_cycle_restart_above_activation_thresh
     thermostat.current_temperature = 20.4
     scheduler = AsyncMock()
 
-    controller = HysteresisController(hysteresis_on=0.3, hysteresis_off=0.5)
-    handler = HysteresisHandler(thermostat)
+    controller = TpiHysteresisController(hysteresis_on=0.3, hysteresis_off=0.5)
+    handler = TpiHysteresisHandler(thermostat)
     handler._controller = controller
     handler._scheduler = scheduler
 
@@ -94,10 +94,10 @@ async def test_control_heating_forces_cool_cycle_restart_below_deactivation_thre
     thermostat.current_temperature = 19.4
     scheduler = AsyncMock()
 
-    controller = HysteresisController(hysteresis_on=0.3, hysteresis_off=0.5)
+    controller = TpiHysteresisController(hysteresis_on=0.3, hysteresis_off=0.5)
     controller.restore_state({"is_active": True, "hvac_mode": "cool", "last_reason": "manual"})
 
-    handler = HysteresisHandler(thermostat)
+    handler = TpiHysteresisHandler(thermostat)
     handler._controller = controller
     handler._scheduler = scheduler
 
@@ -112,10 +112,10 @@ async def test_control_heating_forces_cool_cycle_restart_below_deactivation_thre
 def test_update_attributes_exposes_hysteresis_diagnostics() -> None:
     """The handler must publish Hysteresis tracking attributes."""
     thermostat = _make_thermostat()
-    controller = HysteresisController(hysteresis_on=0.3, hysteresis_off=0.5)
+    controller = TpiHysteresisController(hysteresis_on=0.3, hysteresis_off=0.5)
     controller.calculate(target_temp=20.0, current_temp=20.4, hvac_mode="cool")
 
-    handler = HysteresisHandler(thermostat)
+    handler = TpiHysteresisHandler(thermostat)
     handler._controller = controller
 
     handler.update_attributes()

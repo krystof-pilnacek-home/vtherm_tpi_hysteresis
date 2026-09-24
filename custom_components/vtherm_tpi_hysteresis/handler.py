@@ -19,7 +19,7 @@ from .const import (
     STORAGE_KEY,
     STORAGE_VERSION,
 )
-from .hysteresis.controller import HysteresisController, normalize_hvac_mode
+from .tpi_hysteresis.controller import TpiHysteresisController, normalize_hvac_mode
 
 if TYPE_CHECKING:
     from vtherm_api.interfaces import InterfaceCycleScheduler, InterfaceThermostatRuntime
@@ -27,14 +27,14 @@ if TYPE_CHECKING:
 _LOGGER = logging.getLogger(__name__)
 
 
-class HysteresisHandler:
+class TpiHysteresisHandler:
     """Handler implementing the VT external proportional algorithm lifecycle."""
 
     def __init__(self, thermostat: "InterfaceThermostatRuntime") -> None:
         """Bind the handler to a VT thermostat runtime object."""
         self._thermostat = thermostat
         self._store: Store | None = None
-        self._controller: HysteresisController | None = None
+        self._controller: TpiHysteresisController | None = None
         self._should_publish_intermediate = True
         self._last_committed_on_percent = 0.0
         self._scheduler: InterfaceCycleScheduler | None = None
@@ -50,7 +50,7 @@ class HysteresisHandler:
 
         safe_name = slugify(thermostat.name)
         self._store = Store(thermostat.hass, STORAGE_VERSION, STORAGE_KEY.format(safe_name))
-        self._controller = HysteresisController(
+        self._controller = TpiHysteresisController(
             hysteresis_on=float(config[CONF_HYSTERESIS_ON]),
             hysteresis_off=float(config[CONF_HYSTERESIS_OFF]),
             max_on_percent=float(config[CONF_MAX_ON_PERCENT]),

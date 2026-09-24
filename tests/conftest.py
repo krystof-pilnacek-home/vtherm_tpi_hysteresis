@@ -9,7 +9,7 @@ from pathlib import Path
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 CUSTOM_COMPONENTS_ROOT = PROJECT_ROOT / "custom_components"
-INTEGRATION_ROOT = CUSTOM_COMPONENTS_ROOT / "vtherm_hysteresis"
+INTEGRATION_ROOT = CUSTOM_COMPONENTS_ROOT / "vtherm_tpi_hysteresis"
 
 
 def _ensure_project_on_path() -> None:
@@ -70,5 +70,5 @@ def _ensure_homeassistant_stubs() -> None:
 
 _ensure_project_on_path()
 _ensure_package_stub("custom_components", CUSTOM_COMPONENTS_ROOT)
-_ensure_package_stub("custom_components.vtherm_hysteresis", INTEGRATION_ROOT)
+_ensure_package_stub("custom_components.vtherm_tpi_hysteresis", INTEGRATION_ROOT)
 _ensure_homeassistant_stubs()

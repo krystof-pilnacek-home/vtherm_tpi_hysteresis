@@ -6,7 +6,7 @@ from dataclasses import dataclass
 
 
 @dataclass(slots=True)
-class HysteresisState:
+class TpiHysteresisState:
     """Persisted state for the hysteresis controller."""
 
     is_active: bool = False
@@ -28,7 +28,7 @@ def normalize_hvac_mode(hvac_mode: object) -> str | None:
     return None
 
 
-class HysteresisController:
+class TpiHysteresisController:
     """Simple relay controller with separate on and off thresholds."""
 
     def __init__(
@@ -37,14 +37,14 @@ class HysteresisController:
         hysteresis_off: float,
         max_on_percent: float = 1.0,
         min_on_percent: float = 0.0,
-        state: HysteresisState | None = None,
+        state: TpiHysteresisState | None = None,
     ) -> None:
         """Store the thresholds and initial relay state."""
         self._hysteresis_on = hysteresis_on
         self._hysteresis_off = hysteresis_off
         self._max_on_percent = max_on_percent
         self._min_on_percent = min_on_percent
-        self._state = state or HysteresisState()
+        self._state = state or TpiHysteresisState()
 
     @property
     def on_percent(self) -> float:

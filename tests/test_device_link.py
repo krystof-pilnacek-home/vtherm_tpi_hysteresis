@@ -5,7 +5,7 @@ from __future__ import annotations
 from types import SimpleNamespace
 from unittest.mock import call, MagicMock
 
-from custom_components.vtherm_hysteresis import device_link
+from custom_components.vtherm_tpi_hysteresis import device_link
 
 
 def test_cleanup_config_entry_devices_uses_modern_sweep(monkeypatch) -> None:

@@ -1,5 +1,5 @@
 [project]
-name = "vtherm_hysteresis"
+name = "vtherm_tpi_hysteresis"
 version = "0.1.0"
 description = "Hysteresis plugin for Versatile Thermostat"
 requires-python = ">=3.13"

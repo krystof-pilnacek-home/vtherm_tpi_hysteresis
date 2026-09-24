@@ -8,21 +8,21 @@ from vtherm_api.interfaces import (
     InterfaceThermostatRuntime,
 )
 
-from .const import PROP_FUNCTION_HYSTERESIS
-from .handler import HysteresisHandler
+from .const import PROP_FUNCTION_TPI_HYSTERESIS
+from .handler import TpiHysteresisHandler
 
 
-class HysteresisHandlerFactory(InterfacePropAlgorithmFactory):
+class TpiTpiHysteresisFactory(InterfacePropAlgorithmFactory):
     """Create Hysteresis handlers for VT runtime thermostats."""
 
     @property
     def name(self) -> str:
         """Return the Hysteresis proportional function identifier."""
-        return PROP_FUNCTION_HYSTERESIS
+        return PROP_FUNCTION_TPI_HYSTERESIS
 
     def create(
         self,
         thermostat: InterfaceThermostatRuntime,
     ) -> InterfacePropAlgorithmHandler:
         """Create a handler bound to the runtime thermostat."""
-        return HysteresisHandler(thermostat)
+        return TpiHysteresisHandler(thermostat)
