@@ -16,18 +16,23 @@ from .const import (
     CONF_MAX_ON_PERCENT,
     CONF_MIN_ON_PERCENT,
     CONF_TARGET_VTHERM,
+    CONF_TPI_COEF_EXT,
+    CONF_TPI_COEF_INT,
     DEFAULT_OPTIONS,
     DOMAIN,
 )
 
 
 def build_options_schema(defaults: dict[str, Any]) -> vol.Schema:
-    """Build the TPI Hysteresis defaults schema."""
+    """Build the TPI hysteresis defaults schema."""
     return vol.Schema(
         {
             vol.Optional(
                 CONF_HYSTERESIS_ON,
                 default=defaults[CONF_HYSTERESIS_ON],
+                description={
+                    "suggested_value": defaults[CONF_HYSTERESIS_ON],
+                },
             ): selector.NumberSelector(
                 selector.NumberSelectorConfig(
                     min=0.0,
@@ -39,6 +44,7 @@ def build_options_schema(defaults: dict[str, Any]) -> vol.Schema:
             vol.Optional(
                 CONF_HYSTERESIS_OFF,
                 default=defaults[CONF_HYSTERESIS_OFF],
+                description={"suggested_value": defaults[CONF_HYSTERESIS_OFF]},
             ): selector.NumberSelector(
                 selector.NumberSelectorConfig(
                     min=0.0,
@@ -48,8 +54,33 @@ def build_options_schema(defaults: dict[str, Any]) -> vol.Schema:
                 )
             ),
             vol.Optional(
-                CONF_MAX_ON_PERCENT,
-                default=defaults[CONF_MAX_ON_PERCENT],
+                CONF_TPI_COEF_INT,
+                default=defaults[CONF_TPI_COEF_INT],
+                description={"suggested_value": defaults[CONF_TPI_COEF_INT]},
+            ): selector.NumberSelector(
+                selector.NumberSelectorConfig(
+                    min=0.0,
+                    max=20.0,
+                    step=0.01,
+                    mode=selector.NumberSelectorMode.BOX,
+                )
+            ),
+            vol.Optional(
+                CONF_TPI_COEF_EXT,
+                default=defaults[CONF_TPI_COEF_EXT],
+                description={"suggested_value": defaults[CONF_TPI_COEF_EXT]},
+            ): selector.NumberSelector(
+                selector.NumberSelectorConfig(
+                    min=0.0,
+                    max=20.0,
+                    step=0.01,
+                    mode=selector.NumberSelectorMode.BOX,
+                )
+            ),
+            vol.Optional(
+                CONF_MIN_ON_PERCENT,
+                default=defaults[CONF_MIN_ON_PERCENT],
+                description={"suggested_value": defaults[CONF_MIN_ON_PERCENT]},
             ): selector.NumberSelector(
                 selector.NumberSelectorConfig(
                     min=0.0,
@@ -59,8 +90,9 @@ def build_options_schema(defaults: dict[str, Any]) -> vol.Schema:
                 )
             ),
             vol.Optional(
-                CONF_MIN_ON_PERCENT,
-                default=defaults[CONF_MIN_ON_PERCENT],
+                CONF_MAX_ON_PERCENT,
+                default=defaults[CONF_MAX_ON_PERCENT],
+                description={"suggested_value": defaults[CONF_MAX_ON_PERCENT]},
             ): selector.NumberSelector(
                 selector.NumberSelectorConfig(
                     min=0.0,
@@ -74,8 +106,8 @@ def build_options_schema(defaults: dict[str, Any]) -> vol.Schema:
 
 
 def build_user_schema(defaults: dict[str, Any]) -> vol.Schema:
-    """Build the Hysteresis per-thermostat schema."""
-    schema = {
+    """Build the TPI hysteresis per-thermostat schema."""
+    schema: dict[Any, Any] = {
         vol.Required(CONF_TARGET_VTHERM): selector.EntitySelector(
             selector.EntitySelectorConfig(domain=CLIMATE_DOMAIN)
         )
@@ -85,7 +117,7 @@ def build_user_schema(defaults: dict[str, Any]) -> vol.Schema:
 
 
 class TpiHysteresisConfigFlow(ConfigFlow, domain=DOMAIN):
-    """Manage Hysteresis plugin config entries."""
+    """Manage TPI hysteresis plugin config entries."""
 
     VERSION = 1
 
@@ -99,17 +131,14 @@ class TpiHysteresisConfigFlow(ConfigFlow, domain=DOMAIN):
                 title="TPI Hysteresis defaults",
                 data=dict(DEFAULT_OPTIONS),
             )
-
         return await self.async_step_thermostat()
 
     async def async_step_global(self, user_input: dict[str, Any] | None = None):
         """Handle the global defaults entry."""
         await self.async_set_unique_id(DOMAIN)
         self._abort_if_unique_id_configured()
-
         if user_input is not None:
             return self.async_create_entry(title="TPI Hysteresis defaults", data=user_input)
-
         return self.async_show_form(
             step_id="global",
             data_schema=build_options_schema(DEFAULT_OPTIONS),
@@ -120,24 +149,21 @@ class TpiHysteresisConfigFlow(ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             entity_id = user_input.get(CONF_TARGET_VTHERM)
             registry = er.async_get(self.hass)
-            reg_entry = registry.async_get(entity_id)
+            reg_entry = registry.async_get(entity_id) if entity_id else None
             if reg_entry is None or reg_entry.unique_id is None:
                 return self.async_show_form(
                     step_id="thermostat",
                     data_schema=build_user_schema(DEFAULT_OPTIONS),
                     errors={CONF_TARGET_VTHERM: "invalid_entity"},
                 )
-
             target_unique_id = reg_entry.unique_id
             await self.async_set_unique_id(f"{DOMAIN}-{target_unique_id}")
             self._abort_if_unique_id_configured()
-
             data = dict(user_input)
             data[CONF_TARGET_VTHERM] = target_unique_id
-            state = self.hass.states.get(entity_id)
-            title = state.name if state is not None else entity_id
-            return self.async_create_entry(title=title, data=data)
-
+            state = self.hass.states.get(str(entity_id))
+            title = state.name if state is not None else str(entity_id)
+            return self.async_create_entry(title=str(title), data=data)
         return self.async_show_form(
             step_id="thermostat",
             data_schema=build_user_schema(DEFAULT_OPTIONS),
@@ -150,7 +176,7 @@ class TpiHysteresisConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 class TpiHysteresisOptionsFlow(OptionsFlow):
-    """Edit Hysteresis plugin defaults."""
+    """Edit TPI hysteresis plugin defaults."""
 
     def __init__(self, config_entry) -> None:
         """Store the config entry being edited."""
@@ -160,7 +186,6 @@ class TpiHysteresisOptionsFlow(OptionsFlow):
         """Handle the options flow."""
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
-
         defaults = dict(DEFAULT_OPTIONS)
         defaults.update(self._config_entry.options or self._config_entry.data)
         return self.async_show_form(

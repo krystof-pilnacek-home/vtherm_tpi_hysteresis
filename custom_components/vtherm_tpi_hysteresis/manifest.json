@@ -1,16 +1,17 @@
 {
   "domain": "vtherm_tpi_hysteresis",
-  "name": "Versatile Thermostat TPI Hysteresis",
-  "codeowners": [
-    "@krystof-pilnacek-home"
-  ],
+  "name": "VTherm TPI Hysteresis",
+  "description": "TPI + hysteresis proportional regulation algorithm plugin for Versatile Thermostat",
+  "version": "0.1.0",
   "config_flow": true,
   "dependencies": [
     "versatile_thermostat"
   ],
-  "documentation": "https://github.com/krystof-pilnacek-home/vtherm_tpi_hysteresis",
   "integration_type": "service",
   "iot_class": "calculated",
-  "issue_tracker": "https://github.com/krystof-pilnacek-home/vtherm_tpi_hysteresis/issues",
-  "version": "0.0.0"
+  "codeowners": [
+    "@krystof-pilnacek-home"
+  ],
+  "documentation": "https://github.com/krystof-pilnacek-home/vtherm_tpi_hysteresis",
+  "issue_tracker": "https://github.com/krystof-pilnacek-home/vtherm_tpi_hysteresis/issues"
 }

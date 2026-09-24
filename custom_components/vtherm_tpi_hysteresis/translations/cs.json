@@ -1,0 +1,52 @@
+{
+  "config": {
+    "step": {
+      "global": {
+        "title": "Globální výchozí hodnoty TPI hysteréze",
+        "description": "Výchozí parametry TPI + hysterézy použité pro všechny termostaty Versatile Thermostat s algoritmem tpi_hysteresis_regulation, které nemají vlastní záznam.",
+        "data": {
+          "hysteresis_on": "Hysteréze zapnutí (°C pod/nad cílovou teplotou pro aktivaci)",
+          "hysteresis_off": "Hysteréze vypnutí (°C nad/pod cílovou teplotou pro deaktivaci)",
+          "tpi_coef_int": "Interní TPI koeficient",
+          "tpi_coef_ext": "Externí TPI koeficient",
+          "min_on_percent": "Minimální on percent",
+          "max_on_percent": "Maximální on percent"
+        }
+      },
+      "thermostat": {
+        "title": "Nastavení TPI hysteréze pro konkrétní termostat",
+        "description": "Tyto hodnoty přepisují globální výchozí hodnoty pouze pro vybraný termostat.",
+        "data": {
+          "target_vtherm_unique_id": "Versatile Thermostat",
+          "hysteresis_on": "Hysteréze zapnutí (°C pod/nad cílovou teplotou pro aktivaci)",
+          "hysteresis_off": "Hysteréze vypnutí (°C nad/pod cílovou teplotou pro deaktivaci)",
+          "tpi_coef_int": "Interní TPI koeficient",
+          "tpi_coef_ext": "Externí TPI koeficient",
+          "min_on_percent": "Minimální on percent",
+          "max_on_percent": "Maximální on percent"
+        }
+      }
+    },
+    "error": {
+      "invalid_entity": "Vybraná entita není platná climate entita"
+    },
+    "abort": {
+      "already_configured": "Tento termostat už má záznam TPI hysterézy"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Možnosti TPI hysterézy",
+        "data": {
+          "hysteresis_on": "Hysteréze zapnutí (°C pod/nad cílovou teplotou pro aktivaci)",
+          "hysteresis_off": "Hysteréze vypnutí (°C nad/pod cílovou teplotou pro deaktivaci)",
+          "tpi_coef_int": "Interní TPI koeficient",
+          "tpi_coef_ext": "Externí TPI koeficient",
+          "min_on_percent": "Minimální on percent",
+          "max_on_percent": "Maximální on percent"
+        }
+      }
+    }
+  }
+}
