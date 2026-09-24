@@ -1,9 +1,72 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "vtherm_tpi_hysteresis"
 version = "0.1.0"
-description = "Hysteresis plugin for Versatile Thermostat"
+description = "TPI + hysteresis proportional algorithm plugin for Versatile Thermostat"
+readme = "README.md"
+license = "Apache-2.0"
 requires-python = ">=3.13"
 
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.0.0",
+    "pytest-randomly>=3.15.0",
+    "homeassistant",
+    "vtherm-api>=0.5.0",
+    "ruff>=0.1.0",
+    "mypy>=1.0.0",
+    "pytest-homeassistant-custom-component>=0.13",
+    "pytest-socket>=0.6",
+]
+
+[tool.setuptools]
+packages = ["vtherm_tpi_hysteresis"]
+
+[tool.setuptools.package-dir]
+vtherm_tpi_hysteresis = "custom_components/vtherm_tpi_hysteresis"
+
+[tool.setuptools.package-data]
+vtherm_tpi_hysteresis = ["*.json", "translations/*.json"]
+
 [tool.pytest.ini_options]
-testpaths = ["tests"]
 asyncio_mode = "auto"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-v --tb=short --cov=vtherm_tpi_hysteresis --cov-report=term-missing --cov-report=xml:coverage.xml --cov-report=html"
+
+[tool.coverage.run]
+source = ["vtherm_tpi_hysteresis"]
+branch = true
+omit = ["tests/*"]
+
+[tool.coverage.report]
+show_missing = true
+
+[tool.coverage.xml]
+output = "coverage.xml"
+
+[tool.mypy]
+python_version = "3.14"
+strict = false
+ignore_missing_imports = true
+warn_unused_ignores = false
+files = ["custom_components/vtherm_tpi_hysteresis"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "W",   # pycodestyle warnings
+    "I",   # isort
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+]

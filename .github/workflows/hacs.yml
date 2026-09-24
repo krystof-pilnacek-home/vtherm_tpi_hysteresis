@@ -1,24 +1,18 @@
-name: Validate
-
+name: HACS
 on:
-    push:
-    pull_request:
-    schedule:
-        - cron: "0 0 * * *"
-    workflow_dispatch:
-
-permissions: {}
-
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
 jobs:
-    validate-hacs:
-        runs-on: "ubuntu-latest"
-        steps:
-            - name: HACS validation
-              uses: "hacs/action@main"
-              with:
-                  category: "integration"
-            - name: checkout
-              uses: "actions/checkout@v4"
-
-            - name: "Validate Hassfest"
-              uses: "home-assistant/actions/hassfest@master"
+  validate:
+    name: Validate HACS integration layout
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.14"
+      - name: Validate custom_components layout and manifest
+        run: python .github/scripts/validate_hacs_layout.py
