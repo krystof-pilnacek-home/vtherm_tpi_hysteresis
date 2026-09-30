@@ -3,9 +3,8 @@
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-
-from custom_components.vtherm_hysteresis.handler import HysteresisHandler
-from custom_components.vtherm_hysteresis.hysteresis.controller import HysteresisController
+from vtherm_tpi_hysteresis.handler import HysteresisHandler
+from vtherm_tpi_hysteresis.hysteresis.controller import HysteresisController
 
 
 def _make_thermostat() -> MagicMock:
@@ -14,6 +13,7 @@ def _make_thermostat() -> MagicMock:
     thermostat.vtherm_hvac_mode = "heat"
     thermostat.target_temperature = 20.0
     thermostat.current_temperature = 20.0
+    thermostat.current_outdoor_temperature = 15.0
     thermostat.cycle_scheduler = None
     thermostat.update_custom_attributes = MagicMock()
     thermostat.async_write_ha_state = MagicMock()
@@ -120,9 +120,58 @@ def test_update_attributes_exposes_hysteresis_diagnostics() -> None:
 
     handler.update_attributes()
 
-    assert thermostat._attr_extra_state_attributes["specific_states"]["hysteresis"][
-        "last_reason"
-    ] == "above_activation_threshold"
-    assert thermostat._attr_extra_state_attributes["specific_states"]["hysteresis"][
-        "is_active"
-    ] is True
+    assert (
+        thermostat._attr_extra_state_attributes["specific_states"]["hysteresis"]["last_reason"]
+        == "above_activation_threshold"
+    )
+    assert (
+        thermostat._attr_extra_state_attributes["specific_states"]["hysteresis"]["is_active"]
+        is True
+    )
+
+
+# ---------------------------------------------------------------------------
+# Algorithm selection via the handler configuration
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_init_algorithm_reads_algorithm_option() -> None:
+    """init_algorithm must pass the configured algorithm to the controller."""
+    entry = MagicMock()
+    entry.data = {"algorithm": "on_off", "hysteresis_on": 0.3, "hysteresis_off": 0.5}
+    entry.options = {}
+    entry.unique_id = "vtherm_tpi_hysteresis"
+    hass = MagicMock()
+    hass.config_entries.async_entries = MagicMock(return_value=[entry])
+    hass.async_create_task = MagicMock()
+    hass.config_entries.async_entries = MagicMock(return_value=[])
+    thermostat = _make_thermostat()
+    thermostat.hass = hass
+    thermostat.name = "Test VTherm"
+
+    handler = HysteresisHandler(thermostat)
+    handler.init_algorithm()
+
+    controller = handler._controller
+    assert controller is not None
+    assert controller.get_diagnostics()["algorithm"] == "on_off"
+
+
+@pytest.mark.asyncio
+async def test_init_algorithm_defaults_without_entries() -> None:
+    """Without config entries the controller falls back to on_off."""
+    hass = MagicMock()
+    hass.config_entries.async_entries = MagicMock(return_value=[])
+    hass.async_create_task = MagicMock()
+    hass.config_entries.async_entries = MagicMock(return_value=[])
+    thermostat = _make_thermostat()
+    thermostat.hass = hass
+    thermostat.name = "Test VTherm"
+
+    handler = HysteresisHandler(thermostat)
+    handler.init_algorithm()
+
+    controller = handler._controller
+    assert controller is not None
+    assert controller.get_diagnostics()["algorithm"] == "on_off"
