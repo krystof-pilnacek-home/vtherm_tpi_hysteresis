@@ -1,9 +1,9 @@
-"""Constants for the vtherm_hysteresis integration."""
+"""Constants for the vtherm_tpi_hysteresis integration."""
 
 from __future__ import annotations
 
-DOMAIN = "vtherm_hysteresis"
-NAME = "Versatile Thermostat Hysteresis"
+DOMAIN = "vtherm_tpi_hysteresis"
+NAME = "Versatile Thermostat TPI Hysteresis"
 
 CONF_TARGET_VTHERM = "target_vtherm_unique_id"
 CONF_PROP_FUNCTION = "proportional_function"
@@ -24,9 +24,9 @@ DEFAULT_OPTIONS: dict[str, float] = {
     CONF_MIN_ON_PERCENT: DEFAULT_MIN_ON_PERCENT,
 }
 
-PROP_FUNCTION_HYSTERESIS = "hysteresis"
+PROP_FUNCTION_TPI_HYSTERESIS = "tpi_hysteresis_regulation"
 
 DATA_FACTORY_REGISTERED = "factory_registered"
 
 STORAGE_VERSION = 1
-STORAGE_KEY = "vtherm_hysteresis.{}"
+STORAGE_KEY = "vtherm_tpi_hysteresis.{}"
