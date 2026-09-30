@@ -1,7 +1,11 @@
 __pycache__/
-*/__pycache__/
-*.py[cod]
 .venv/
-tmp/
-plans/
-dev_tests/
+.pytest_cache/
+*.py[cod]
+*.egg-info/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.mypy_cache/
+.ruff_cache/
