@@ -6,7 +6,15 @@ This integration exposes a basic heating and cooling hysteresis controller to Ve
 
 It is intentionally simple and is meant to serve as a reference implementation for developers who want to plug another algorithm into VT.
 
+The plugin composes a preset algorithm under an optional hysteresis overlay: the overlay decides *whether* to regulate, the algorithm decides *how much* power to request while regulating.
+
 ## Parameters
+
+### Algorithm
+
+The preset algorithm used while regulation is active. `on_off` (default) reproduces the historical relay behaviour: `max_on_percent` while active, `min_on_percent` while inactive. A `tpi` preset is reserved for the follow-up (#4) and is not selectable until then; the `algorithm` option lists all registered presets.
+
+With `hysteresis_on` and `hysteresis_off` both at `0` the hysteresis band degenerates and the algorithm regulates up to the setpoint directly (plain on/off or proportional control).
 
 ### Activation delta
 
@@ -36,6 +44,7 @@ Range: `0.0` – `1.0`. Default: `0.0`.
 
 The controller exposes its latest decision under `specific_states.hysteresis`:
 
+- `algorithm`
 - `is_active`
 - `hvac_mode`
 - `on_percent`
