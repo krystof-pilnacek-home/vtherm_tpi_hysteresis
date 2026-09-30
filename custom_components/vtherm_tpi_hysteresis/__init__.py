@@ -7,6 +7,7 @@ from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import CoreState, HomeAssistant
+from homeassistant.helpers import config_validation as cv
 from vtherm_api.log_collector import get_vtherm_logger
 from vtherm_api.vtherm_api import VThermAPI
 
@@ -24,6 +25,8 @@ VT_DOMAIN = "versatile_thermostat"
 
 _LOGGER = get_vtherm_logger(__name__)
 
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
+
 
 def _ensure_domain_data(hass: HomeAssistant) -> dict[str, Any]:
     """Return the plugin data storage in hass."""
@@ -33,15 +36,19 @@ def _ensure_domain_data(hass: HomeAssistant) -> dict[str, Any]:
 def _register_factory(hass: HomeAssistant) -> bool:
     """Register the Hysteresis factory in the shared VT API."""
     data = _ensure_domain_data(hass)
-    if data.get(DATA_FACTORY_REGISTERED) is True:
-        return True
 
     api = VThermAPI.get_vtherm_api(hass)
     if api is None:
-        _LOGGER.warning(
-            "Unable to register Hysteresis factory because VThermAPI is unavailable"
-        )
+        _LOGGER.warning("Unable to register Hysteresis factory because VThermAPI is unavailable")
         return False
+
+    # Trust the flag only if the factory is still registered on the live API:
+    # a VT reload can recreate the API registry behind our back.
+    if (
+        data.get(DATA_FACTORY_REGISTERED) is True
+        and api.get_prop_algorithm(PROP_FUNCTION_TPI_HYSTERESIS) is not None
+    ):
+        return True
 
     factory = HysteresisHandlerFactory()
     existing_factory = api.get_prop_algorithm(factory.name)
@@ -91,7 +98,10 @@ async def _reload_hysteresis_vtherms(
         reload_tasks.append(hass.config_entries.async_reload(entry.entry_id))
 
     if reload_tasks:
-        await asyncio.gather(*reload_tasks)
+        results = await asyncio.gather(*reload_tasks, return_exceptions=True)
+        for result in results:
+            if isinstance(result, Exception):
+                _LOGGER.error("Failed to reload a Versatile Thermostat entry: %s", result)
 
 
 async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
@@ -118,6 +128,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 async def _async_update_options(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Reload VT thermostats when options are changed so the new parameters apply."""
+    _register_factory(hass)
     await _reload_hysteresis_vtherms(hass, source_entry=entry)
 
 

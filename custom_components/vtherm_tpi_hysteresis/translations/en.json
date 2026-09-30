@@ -2,18 +2,10 @@
   "title": "Versatile Thermostat TPI Hysteresis",
   "config": {
     "step": {
-      "global": {
-        "title": "Hysteresis defaults",
-        "data": {
-          "hysteresis_on": "Activation delta",
-          "hysteresis_off": "Deactivation delta",
-          "max_on_percent": "Active power (0.0–1.0)",
-          "min_on_percent": "Inactive power (0.0–1.0)"
-        }
-      },
       "thermostat": {
         "title": "Hysteresis per thermostat",
         "data": {
+          "algorithm": "Algorithm under the hysteresis overlay",
           "target_vtherm_unique_id": "Target thermostat",
           "hysteresis_on": "Activation delta",
           "hysteresis_off": "Deactivation delta",
@@ -26,7 +18,8 @@
       "single_instance_allowed": "Only one Hysteresis global configuration is allowed."
     },
     "error": {
-      "invalid_entity": "The selected climate entity cannot be linked to a VT unique identifier."
+      "invalid_entity": "The selected climate entity cannot be linked to a VT unique identifier.",
+      "min_greater_than_max": "Active power must be greater than or equal to inactive power."
     }
   },
   "options": {
@@ -34,6 +27,7 @@
       "init": {
         "title": "Hysteresis defaults",
         "data": {
+          "algorithm": "Algorithm under the hysteresis overlay",
           "hysteresis_on": "Activation delta",
           "hysteresis_off": "Deactivation delta",
           "max_on_percent": "Active power (0.0–1.0)",

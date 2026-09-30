@@ -12,5 +12,5 @@
   "integration_type": "service",
   "iot_class": "calculated",
   "issue_tracker": "https://github.com/krystof-pilnacek-home/vtherm_tpi_hysteresis/issues",
-  "version": "0.0.0"
+  "version": "0.5.0"
 }

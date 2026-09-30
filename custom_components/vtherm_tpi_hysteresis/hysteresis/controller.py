@@ -1,8 +1,23 @@
-"""Discrete hysteresis controller used by the plugin handler."""
+"""Discrete hysteresis controller used by the plugin handler.
+
+The controller composes a preset algorithm (see ``algorithms.py``) under an
+optional hysteresis overlay:
+
+* while regulation is active, ``on_percent`` comes from the algorithm;
+* the hysteresis band (``hysteresis_on`` / ``hysteresis_off``) decides when
+  regulation activates, deactivates, or holds its previous state;
+* with both thresholds at 0 the band degenerates and the plain algorithm
+  runs without hysteresis (regulate exactly until the setpoint is met).
+"""
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
+
+from .algorithms import get_algorithm
+
+_LOGGER = logging.getLogger(__name__)
 
 
 @dataclass(slots=True)
@@ -14,17 +29,22 @@ class HysteresisState:
     last_reason: str = "idle"
     activation_threshold: float | None = None
     deactivation_threshold: float | None = None
+    last_target_temp: float | None = None
+    last_current_temp: float | None = None
+    last_ext_temp: float | None = None
 
 
 def normalize_hvac_mode(hvac_mode: object) -> str | None:
-    """Return a normalized HVAC mode name."""
+    """Return a normalized HVAC mode name.
+
+    Matching is exact: ``heat_cool`` must not be classified as ``cool``
+    (the ``endswith`` chain upstream inherited did exactly that), and
+    unsupported modes (``dry``, ``fan_only``, ...) return None so the
+    controller can treat them explicitly.
+    """
     value = str(hvac_mode).lower()
-    if value.endswith("heat"):
-        return "heat"
-    if value.endswith("cool"):
-        return "cool"
-    if value.endswith("off"):
-        return "off"
+    if value in ("heat", "cool", "off"):
+        return value
     return None
 
 
@@ -37,19 +57,58 @@ class HysteresisController:
         hysteresis_off: float,
         max_on_percent: float = 1.0,
         min_on_percent: float = 0.0,
+        algorithm: str = "on_off",
         state: HysteresisState | None = None,
     ) -> None:
-        """Store the thresholds and initial relay state."""
+        """Store the thresholds, algorithm and initial relay state."""
         self._hysteresis_on = hysteresis_on
         self._hysteresis_off = hysteresis_off
         self._max_on_percent = max_on_percent
         self._min_on_percent = min_on_percent
+        self._algorithm = get_algorithm(algorithm)
         self._state = state or HysteresisState()
+        if self._min_on_percent > self._max_on_percent:
+            _LOGGER.warning(
+                "min_on_percent (%s) is greater than max_on_percent (%s); "
+                "check the plugin configuration",
+                self._min_on_percent,
+                self._max_on_percent,
+            )
 
     @property
     def on_percent(self) -> float:
-        """Return the duty request expected by the VT cycle scheduler."""
-        return self._max_on_percent if self._state.is_active else self._min_on_percent
+        """Return the duty request expected by the VT cycle scheduler.
+
+        When the controller is not in a supported, regulating state
+        (HVAC off, unsupported mode, or missing temperatures) the duty
+        request is 0 regardless of ``min_on_percent``: the floor is a
+        regulation parameter, not a device-always-on override.
+        """
+        if self._state.last_reason in (
+            "hvac_off",
+            "unsupported_hvac_mode",
+            "missing_temperature",
+        ):
+            return 0.0
+        return self._clamp(
+            self._algorithm(
+                self._state.hvac_mode or "off",
+                self._state.last_target_temp,
+                self._state.last_current_temp,
+                self._state.last_ext_temp,
+                {
+                    "is_active": self._state.is_active,
+                    "max_on_percent": self._max_on_percent,
+                    "min_on_percent": self._min_on_percent,
+                },
+            )
+        )
+
+    def _clamp(self, value: float) -> float:
+        """Clamp an algorithm request into [min_on_percent, max_on_percent]."""
+        low = min(self._min_on_percent, self._max_on_percent)
+        high = max(self._min_on_percent, self._max_on_percent)
+        return max(low, min(high, value))
 
     @property
     def calculated_on_percent(self) -> float:
@@ -79,6 +138,7 @@ class HysteresisController:
     def get_diagnostics(self) -> dict[str, object]:
         """Return the diagnostics payload exposed on the thermostat."""
         return {
+            "algorithm": self._algorithm.name,
             "is_active": self._state.is_active,
             "hvac_mode": self._state.hvac_mode,
             "on_percent": self.on_percent,
@@ -120,13 +180,14 @@ class HysteresisController:
         self,
         target_temp: float | None,
         current_temp: float | None,
+        ext_temp: float | None = None,
         *_args: object,
         hvac_mode: object = None,
         **_kwargs: object,
     ) -> float:
-        """Apply the relay hysteresis law and return the resulting on_percent."""
-        if hvac_mode is None and len(_args) >= 3:
-            hvac_mode = _args[2]
+        """Apply the hysteresis law and return the resulting on_percent."""
+        if hvac_mode is None and len(_args) >= 2:
+            hvac_mode = _args[1]
 
         mode = normalize_hvac_mode(hvac_mode)
         self._state.hvac_mode = mode
@@ -147,6 +208,10 @@ class HysteresisController:
             self._state.is_active = False
             self._state.last_reason = "missing_temperature"
             return self.on_percent
+
+        self._state.last_target_temp = target_temp
+        self._state.last_current_temp = current_temp
+        self._state.last_ext_temp = ext_temp
 
         if mode == "heat":
             activation_threshold = target_temp - self._hysteresis_on
