@@ -1,0 +1,43 @@
+{
+  "title": "Versatile Thermostat TPI Hystérésis",
+  "config": {
+    "step": {
+      "thermostat": {
+        "title": "Hystérésis par thermostat",
+        "data": {
+          "algorithm": "Algorithme sous la superposition d'hystérésis",
+          "target_vtherm_unique_id": "Thermostat cible",
+          "hysteresis_on": "Écart d'activation",
+          "hysteresis_off": "Écart de désactivation",
+          "max_on_percent": "Puissance active (0.0–1.0)",
+          "min_on_percent": "Puissance inactive (0.0–1.0)",
+          "coef_int": "Coefficient interne (TPI)",
+          "coef_ext": "Coefficient externe (TPI)"
+        }
+      }
+    },
+    "abort": {
+      "single_instance_allowed": "Une seule configuration globale de l'hystérésis est autorisée."
+    },
+    "error": {
+      "invalid_entity": "L'entité climate sélectionnée ne peut pas être liée à un identifiant unique VT.",
+      "min_greater_than_max": "La puissance active doit être supérieure ou égale à la puissance inactive."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Valeurs par défaut de l'hystérésis",
+        "data": {
+          "algorithm": "Algorithme sous la superposition d'hystérésis",
+          "hysteresis_on": "Écart d'activation",
+          "hysteresis_off": "Écart de désactivation",
+          "max_on_percent": "Puissance active (0.0–1.0)",
+          "min_on_percent": "Puissance inactive (0.0–1.0)",
+          "coef_int": "Coefficient interne (TPI)",
+          "coef_ext": "Coefficient externe (TPI)"
+        }
+      }
+    }
+  }
+}

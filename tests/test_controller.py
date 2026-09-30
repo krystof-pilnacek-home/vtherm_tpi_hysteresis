@@ -1,5 +1,6 @@
 """Tests for the reference hysteresis controller."""
 
+import pytest
 from vtherm_tpi_hysteresis.hysteresis.controller import (
     HysteresisController,
 )
@@ -92,6 +93,8 @@ def test_hysteresis_diagnostics_expose_tracking_attributes() -> None:
         "hysteresis_off": 0.5,
         "max_on_percent": 1.0,
         "min_on_percent": 0.0,
+        "coef_int": 1.0,
+        "coef_ext": 0.1,
     }
 
 
@@ -154,3 +157,96 @@ def test_algorithm_receives_temperatures_for_future_presets() -> None:
     assert state.last_target_temp == 20.0
     assert state.last_current_temp == 19.7
     assert state.last_ext_temp == 15.0
+
+
+# ---------------------------------------------------------------------------
+# TPI preset algorithm
+# ---------------------------------------------------------------------------
+
+
+def _tpi_controller(
+    *,
+    hysteresis_on: float = 0.3,
+    hysteresis_off: float = 0.5,
+    max_on_percent: float = 1.0,
+    min_on_percent: float = 0.0,
+    coef_int: float = 0.5,
+    coef_ext: float = 0.1,
+) -> HysteresisController:
+    return HysteresisController(
+        hysteresis_on=hysteresis_on,
+        hysteresis_off=hysteresis_off,
+        max_on_percent=max_on_percent,
+        min_on_percent=min_on_percent,
+        coef_int=coef_int,
+        coef_ext=coef_ext,
+        algorithm="tpi",
+    )
+
+
+def test_tpi_proportional_taper_inside_band() -> None:
+    """Active TPI tapers proportionally with the deficit while held in-band."""
+    controller = _tpi_controller()
+    controller.restore_state({"is_active": True, "hvac_mode": "heat", "last_reason": "manual"})
+    # 0.2 internal deficit + 5.0 external deficit * 0.1
+    assert controller.calculate(
+        target_temp=20.0, current_temp=19.8, ext_temp=15.0, hvac_mode="heat"
+    ) == pytest.approx(0.6)
+    assert controller.last_reason == "hold_in_band"
+    # taper tracks the internal deficit only when no outdoor sensor
+    assert controller.calculate(
+        target_temp=20.0, current_temp=19.9, ext_temp=None, hvac_mode="heat"
+    ) == pytest.approx(0.05)
+
+
+def test_tpi_inactive_requests_floor() -> None:
+    """While inactive the tpi preset requests min_on_percent."""
+    controller = _tpi_controller(min_on_percent=0.1)
+    assert controller.calculate(
+        target_temp=20.0, current_temp=20.5, hvac_mode="heat"
+    ) == pytest.approx(0.1)
+
+
+def test_tpi_output_is_clamped() -> None:
+    """TPI requests are clamped into [min_on_percent, max_on_percent]."""
+    controller = _tpi_controller(max_on_percent=0.6, min_on_percent=0.1)
+    # huge deficit clamps to max
+    assert controller.calculate(
+        target_temp=20.0, current_temp=10.0, ext_temp=-5.0, hvac_mode="heat"
+    ) == pytest.approx(0.6)
+    # negative contribution clamps to min
+    controller.restore_state({"is_active": True, "hvac_mode": "heat", "last_reason": "manual"})
+    assert controller.calculate(
+        target_temp=20.0, current_temp=20.2, ext_temp=25.0, hvac_mode="heat"
+    ) == pytest.approx(0.1)
+
+
+def test_tpi_cool_mode_mirrors_deltas() -> None:
+    """Cool mode uses (current - target) and (outdoor - target) signs."""
+    controller = _tpi_controller()
+    controller.restore_state({"is_active": True, "hvac_mode": "cool", "last_reason": "manual"})
+    # cool: coef_int * (current - target) + coef_ext * (outdoor - target)
+    assert controller.calculate(
+        target_temp=21.0, current_temp=21.2, ext_temp=22.0, hvac_mode="cool"
+    ) == pytest.approx(0.2)
+
+
+def test_tpi_degenerate_band_regulates_proportionally() -> None:
+    """With a zero-width band the TPI law runs without hysteresis."""
+    controller = _tpi_controller(hysteresis_on=0.0, hysteresis_off=0.0)
+    assert controller.calculate(
+        target_temp=20.0, current_temp=19.5, ext_temp=15.0, hvac_mode="heat"
+    ) == pytest.approx(0.75)
+    assert controller.is_active is True
+    assert (
+        controller.calculate(target_temp=20.0, current_temp=20.1, ext_temp=15.0, hvac_mode="heat")
+        == 0.0
+    )
+    assert controller.is_active is False
+
+
+def test_tpi_registered_in_registry() -> None:
+    """The tpi preset must be selectable by name."""
+    from vtherm_tpi_hysteresis.hysteresis.algorithms import ALGORITHMS
+
+    assert "tpi" in ALGORITHMS

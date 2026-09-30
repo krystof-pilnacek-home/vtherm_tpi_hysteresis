@@ -12,6 +12,8 @@ from homeassistant.helpers import selector
 
 from .const import (
     CONF_ALGORITHM,
+    CONF_COEF_EXT,
+    CONF_COEF_INT,
     CONF_HYSTERESIS_OFF,
     CONF_HYSTERESIS_ON,
     CONF_MAX_ON_PERCENT,
@@ -86,6 +88,28 @@ def build_options_schema(defaults: dict[str, Any]) -> vol.Schema:
                 selector.NumberSelectorConfig(
                     min=0.0,
                     max=1.0,
+                    step=0.01,
+                    mode=selector.NumberSelectorMode.BOX,
+                )
+            ),
+            vol.Optional(
+                CONF_COEF_INT,
+                default=defaults[CONF_COEF_INT],
+            ): selector.NumberSelector(
+                selector.NumberSelectorConfig(
+                    min=0.0,
+                    max=20.0,
+                    step=0.01,
+                    mode=selector.NumberSelectorMode.BOX,
+                )
+            ),
+            vol.Optional(
+                CONF_COEF_EXT,
+                default=defaults[CONF_COEF_EXT],
+            ): selector.NumberSelector(
+                selector.NumberSelectorConfig(
+                    min=0.0,
+                    max=20.0,
                     step=0.01,
                     mode=selector.NumberSelectorMode.BOX,
                 )

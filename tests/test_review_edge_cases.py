@@ -34,11 +34,11 @@ def test_heat_cool_mode_is_not_treated_as_cooling() -> None:
     assert controller.last_reason == "unsupported_hvac_mode"
 
 
-def test_tpi_preset_is_not_registered() -> None:
-    """The tpi placeholder must not be selectable until follow-up #4."""
-    assert sorted(ALGORITHMS) == ["on_off"]
+def test_tpi_preset_selectable() -> None:
+    """The tpi preset is registered and selectable since follow-up #4."""
+    assert sorted(ALGORITHMS) == ["on_off", "tpi"]
     controller = HysteresisController(hysteresis_on=0.3, hysteresis_off=0.3, algorithm="tpi")
-    assert controller.get_diagnostics()["algorithm"] == "on_off"
+    assert controller.get_diagnostics()["algorithm"] == "tpi"
 
 
 def test_get_algorithm_unknown_name_falls_back_to_on_off() -> None:

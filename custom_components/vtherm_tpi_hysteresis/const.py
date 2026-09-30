@@ -12,6 +12,8 @@ CONF_HYSTERESIS_OFF = "hysteresis_off"
 CONF_MAX_ON_PERCENT = "max_on_percent"
 CONF_MIN_ON_PERCENT = "min_on_percent"
 CONF_ALGORITHM = "algorithm"
+CONF_COEF_INT = "coef_int"
+CONF_COEF_EXT = "coef_ext"
 
 #: Preset algorithm used while regulation is active (see
 #: hysteresis/algorithms.py). ``on_off`` is the historical relay behaviour.
@@ -21,6 +23,8 @@ DEFAULT_HYSTERESIS_ON = 0.3
 DEFAULT_HYSTERESIS_OFF = 0.3
 DEFAULT_MAX_ON_PERCENT = 1.0
 DEFAULT_MIN_ON_PERCENT = 0.0
+DEFAULT_COEF_INT = 1.0
+DEFAULT_COEF_EXT = 0.1
 
 DEFAULT_OPTIONS: dict[str, float | str] = {
     CONF_ALGORITHM: DEFAULT_ALGORITHM,
@@ -28,6 +32,8 @@ DEFAULT_OPTIONS: dict[str, float | str] = {
     CONF_HYSTERESIS_OFF: DEFAULT_HYSTERESIS_OFF,
     CONF_MAX_ON_PERCENT: DEFAULT_MAX_ON_PERCENT,
     CONF_MIN_ON_PERCENT: DEFAULT_MIN_ON_PERCENT,
+    CONF_COEF_INT: DEFAULT_COEF_INT,
+    CONF_COEF_EXT: DEFAULT_COEF_EXT,
 }
 
 PROP_FUNCTION_TPI_HYSTERESIS = "tpi_hysteresis_regulation"

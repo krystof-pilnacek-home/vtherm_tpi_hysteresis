@@ -10,7 +10,9 @@
           "hysteresis_on": "Activation delta",
           "hysteresis_off": "Deactivation delta",
           "max_on_percent": "Active power (0.0–1.0)",
-          "min_on_percent": "Inactive power (0.0–1.0)"
+          "min_on_percent": "Inactive power (0.0–1.0)",
+          "coef_int": "Internal coefficient (TPI)",
+          "coef_ext": "External coefficient (TPI)"
         }
       }
     },
@@ -31,7 +33,9 @@
           "hysteresis_on": "Activation delta",
           "hysteresis_off": "Deactivation delta",
           "max_on_percent": "Active power (0.0–1.0)",
-          "min_on_percent": "Inactive power (0.0–1.0)"
+          "min_on_percent": "Inactive power (0.0–1.0)",
+          "coef_int": "Internal coefficient (TPI)",
+          "coef_ext": "External coefficient (TPI)"
         }
       }
     }
