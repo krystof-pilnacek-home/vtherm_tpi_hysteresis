@@ -9,11 +9,13 @@ from homeassistant.helpers.storage import Store
 from homeassistant.util import slugify
 
 from .const import (
+    CONF_ALGORITHM,
     CONF_HYSTERESIS_OFF,
     CONF_HYSTERESIS_ON,
     CONF_MAX_ON_PERCENT,
     CONF_MIN_ON_PERCENT,
     CONF_TARGET_VTHERM,
+    DEFAULT_ALGORITHM,
     DEFAULT_OPTIONS,
     DOMAIN,
     STORAGE_KEY,
@@ -22,7 +24,10 @@ from .const import (
 from .hysteresis.controller import HysteresisController, normalize_hvac_mode
 
 if TYPE_CHECKING:
-    from vtherm_api.interfaces import InterfaceCycleScheduler, InterfaceThermostatRuntime
+    from vtherm_api.interfaces import (
+        InterfaceCycleScheduler,
+        InterfaceThermostatRuntime,
+    )
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -30,13 +35,14 @@ _LOGGER = logging.getLogger(__name__)
 class HysteresisHandler:
     """Handler implementing the VT external proportional algorithm lifecycle."""
 
-    def __init__(self, thermostat: "InterfaceThermostatRuntime") -> None:
+    def __init__(self, thermostat: InterfaceThermostatRuntime) -> None:
         """Bind the handler to a VT thermostat runtime object."""
         self._thermostat = thermostat
         self._store: Store | None = None
         self._controller: HysteresisController | None = None
         self._should_publish_intermediate = True
         self._last_committed_on_percent = 0.0
+        self._last_saved_state: dict[str, object] | None = None
         self._scheduler: InterfaceCycleScheduler | None = None
 
     def init_algorithm(self) -> None:
@@ -55,13 +61,14 @@ class HysteresisHandler:
             hysteresis_off=float(config[CONF_HYSTERESIS_OFF]),
             max_on_percent=float(config[CONF_MAX_ON_PERCENT]),
             min_on_percent=float(config[CONF_MIN_ON_PERCENT]),
+            algorithm=str(config.get(CONF_ALGORITHM, DEFAULT_ALGORITHM)),
         )
         thermostat.prop_algorithm = self._controller
 
-    def _get_effective_config(self) -> dict[str, float]:
+    def _get_effective_config(self) -> dict[str, float | str]:
         """Return the merged Hysteresis configuration."""
         thermostat = self._thermostat
-        config: dict[str, float] = dict(DEFAULT_OPTIONS)
+        config: dict[str, float | str] = dict(DEFAULT_OPTIONS)
 
         plugin_entries = thermostat.hass.config_entries.async_entries(DOMAIN)
         matching_entry = next(
@@ -113,9 +120,18 @@ class HysteresisHandler:
         """Release resources and persist the current controller state."""
         thermostat = self._thermostat
         if self._store is not None and self._controller is not None:
-            thermostat.hass.async_create_task(self._store.async_save(self._controller.save_state()))
+            thermostat.hass.async_create_task(self._async_save_state())
 
-    def on_scheduler_ready(self, scheduler: "InterfaceCycleScheduler") -> None:
+    async def _async_save_state(self) -> None:
+        """Persist the controller state, tolerating a shutdown store."""
+        assert self._store is not None and self._controller is not None
+        try:
+            self._last_saved_state = self._controller.save_state()
+            await self._store.async_save(self._last_saved_state)
+        except Exception as err:  # pragma: no cover - defensive logging path
+            _LOGGER.error("%s - Failed to save Hysteresis state: %s", self._thermostat, err)
+
+    def on_scheduler_ready(self, scheduler: InterfaceCycleScheduler) -> None:
         """Receive the VT cycle scheduler once it is available.
 
         Complex algorithms can register cycle callbacks here. The hysteresis
@@ -175,6 +191,7 @@ class HysteresisHandler:
             controller.calculate(
                 target_temp=thermostat.target_temperature,
                 current_temp=thermostat.current_temperature,
+                ext_temp=thermostat.current_outdoor_temperature,
                 hvac_mode=thermostat.vtherm_hvac_mode,
             )
             self._should_publish_intermediate = (
@@ -193,8 +210,8 @@ class HysteresisHandler:
         thermostat.update_custom_attributes()
         thermostat.async_write_ha_state()
 
-        if self._store is not None:
-            thermostat.hass.async_create_task(self._store.async_save(controller.save_state()))
+        if self._store is not None and controller.save_state() != self._last_saved_state:
+            thermostat.hass.async_create_task(self._async_save_state())
 
     async def on_state_changed(self, changed: bool) -> None:
         """React to thermostat state changes.

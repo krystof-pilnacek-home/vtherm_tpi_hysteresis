@@ -11,6 +11,7 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers import selector
 
 from .const import (
+    CONF_ALGORITHM,
     CONF_HYSTERESIS_OFF,
     CONF_HYSTERESIS_ON,
     CONF_MAX_ON_PERCENT,
@@ -19,12 +20,32 @@ from .const import (
     DEFAULT_OPTIONS,
     DOMAIN,
 )
+from .hysteresis.algorithms import ALGORITHMS
+
+
+def _validate_options(user_input: dict[str, Any]) -> dict[str, str]:
+    """Return per-field errors for an options payload, empty when valid."""
+    errors: dict[str, str] = {}
+    min_on = user_input.get(CONF_MIN_ON_PERCENT)
+    max_on = user_input.get(CONF_MAX_ON_PERCENT)
+    if min_on is not None and max_on is not None and float(min_on) > float(max_on):
+        errors[CONF_MAX_ON_PERCENT] = "min_greater_than_max"
+    return errors
 
 
 def build_options_schema(defaults: dict[str, Any]) -> vol.Schema:
     """Build the Hysteresis defaults schema."""
     return vol.Schema(
         {
+            vol.Optional(
+                CONF_ALGORITHM,
+                default=defaults[CONF_ALGORITHM],
+            ): selector.SelectSelector(
+                selector.SelectSelectorConfig(
+                    options=sorted(ALGORITHMS),
+                    mode=selector.SelectSelectorMode.DROPDOWN,
+                )
+            ),
             vol.Optional(
                 CONF_HYSTERESIS_ON,
                 default=defaults[CONF_HYSTERESIS_ON],
@@ -84,6 +105,19 @@ def build_user_schema(defaults: dict[str, Any]) -> vol.Schema:
     return vol.Schema(schema)
 
 
+def _global_defaults(hass) -> dict[str, Any]:
+    """Return the configured global defaults, or DEFAULT_OPTIONS."""
+    defaults = dict(DEFAULT_OPTIONS)
+    global_entry = next(
+        (entry for entry in hass.config_entries.async_entries(DOMAIN) if entry.unique_id == DOMAIN),
+        None,
+    )
+    if global_entry is not None:
+        defaults.update(global_entry.data)
+        defaults.update(global_entry.options)
+    return defaults
+
+
 class HysteresisConfigFlow(ConfigFlow, domain=DOMAIN):
     """Manage Hysteresis plugin config entries."""
 
@@ -99,70 +133,63 @@ class HysteresisConfigFlow(ConfigFlow, domain=DOMAIN):
                 title="Hysteresis defaults",
                 data=dict(DEFAULT_OPTIONS),
             )
-
         return await self.async_step_thermostat()
-
-    async def async_step_global(self, user_input: dict[str, Any] | None = None):
-        """Handle the global defaults entry."""
-        await self.async_set_unique_id(DOMAIN)
-        self._abort_if_unique_id_configured()
-
-        if user_input is not None:
-            return self.async_create_entry(title="Hysteresis defaults", data=user_input)
-
-        return self.async_show_form(
-            step_id="global",
-            data_schema=build_options_schema(DEFAULT_OPTIONS),
-        )
 
     async def async_step_thermostat(self, user_input: dict[str, Any] | None = None):
         """Handle the per-thermostat entry."""
+        defaults = _global_defaults(self.hass)
         if user_input is not None:
+            errors = _validate_options(user_input)
             entity_id = user_input.get(CONF_TARGET_VTHERM)
             registry = er.async_get(self.hass)
-            reg_entry = registry.async_get(entity_id)
+            reg_entry = registry.async_get(str(entity_id)) if entity_id else None
             if reg_entry is None or reg_entry.unique_id is None:
-                return self.async_show_form(
-                    step_id="thermostat",
-                    data_schema=build_user_schema(DEFAULT_OPTIONS),
-                    errors={CONF_TARGET_VTHERM: "invalid_entity"},
-                )
+                errors[CONF_TARGET_VTHERM] = "invalid_entity"
+            if not errors:
+                assert reg_entry is not None
+                target_unique_id = reg_entry.unique_id
+                await self.async_set_unique_id(f"{DOMAIN}-{target_unique_id}")
+                self._abort_if_unique_id_configured()
 
-            target_unique_id = reg_entry.unique_id
-            await self.async_set_unique_id(f"{DOMAIN}-{target_unique_id}")
-            self._abort_if_unique_id_configured()
-
-            data = dict(user_input)
-            data[CONF_TARGET_VTHERM] = target_unique_id
-            state = self.hass.states.get(entity_id)
-            title = state.name if state is not None else entity_id
-            return self.async_create_entry(title=title, data=data)
-
+                data = dict(user_input)
+                data[CONF_TARGET_VTHERM] = target_unique_id
+                state = self.hass.states.get(str(entity_id))
+                title = state.name if state is not None else str(entity_id)
+                return self.async_create_entry(title=str(title), data=data)
+            return self.async_show_form(
+                step_id="thermostat",
+                data_schema=build_user_schema({**defaults, **user_input}),
+                errors=errors,
+            )
         return self.async_show_form(
             step_id="thermostat",
-            data_schema=build_user_schema(DEFAULT_OPTIONS),
+            data_schema=build_user_schema(defaults),
         )
 
     @staticmethod
     def async_get_options_flow(config_entry):
         """Return the options flow handler."""
-        return HysteresisOptionsFlow(config_entry)
+        return HysteresisOptionsFlow()
 
 
 class HysteresisOptionsFlow(OptionsFlow):
     """Edit Hysteresis plugin defaults."""
 
-    def __init__(self, config_entry) -> None:
-        """Store the config entry being edited."""
-        self._config_entry = config_entry
-
     async def async_step_init(self, user_input: dict[str, Any] | None = None):
         """Handle the options flow."""
         if user_input is not None:
+            errors = _validate_options(user_input)
+            if errors:
+                return self.async_show_form(
+                    step_id="init",
+                    data_schema=build_options_schema(user_input),
+                    errors=errors,
+                )
             return self.async_create_entry(title="", data=user_input)
 
         defaults = dict(DEFAULT_OPTIONS)
-        defaults.update(self._config_entry.options or self._config_entry.data)
+        config_entry = self.config_entry
+        defaults.update(config_entry.options or config_entry.data)
         return self.async_show_form(
             step_id="init",
             data_schema=build_options_schema(defaults),
