@@ -8,7 +8,7 @@ The repository mirrors the structure of a complete external algorithm integratio
 - `factory.py` exposes the identifier used by VT to instantiate the handler
 - `handler.py` implements the runtime lifecycle expected by `InterfacePropAlgorithmHandler`
 - `hysteresis/controller.py` contains the hysteresis overlay and delegates the power request to the composed algorithm
-- `hysteresis/algorithms.py` is the preset algorithm registry (`on_off` today; `tpi` deliberately unregistered until follow-up #4)
+- `hysteresis/algorithms.py` is the preset algorithm registry (`on_off`, `tpi`)
 - `config_flow.py` provides global and per-thermostat configuration entries
 
 ## Interface contract
@@ -35,6 +35,8 @@ The controller splits the regulation decision in two:
 - the composed **algorithm** computes `on_percent` while regulating. The controller clamps the request into `[min_on_percent, max_on_percent]`.
 
 An algorithm is a callable `(hvac_mode, target_temp, current_temp, ext_temp, params) -> float` registered by name in `ALGORITHMS`; `get_algorithm()` falls back to `on_off` for unknown names and `register_algorithm()` is the extension point. The `algorithm` config option selects the preset per thermostat (or via global defaults).
+
+The `tpi` preset implements the proportional control law `coef_int * (target - current) + coef_ext * (target - outdoor)` while regulation is active, with the deltas negated in cool mode. The `coef_int` / `coef_ext` config options (defaults `1.0` / `0.1`) are passed through the controller `params` dict to the composed algorithm; when no outdoor temperature is available the external term is `0`. The hysteresis overlay is unchanged: while inactive the preset returns `min_on_percent`.
 
 With `hysteresis_on = hysteresis_off = 0` the band degenerates and the algorithm output drives regulation directly up to the setpoint.
 

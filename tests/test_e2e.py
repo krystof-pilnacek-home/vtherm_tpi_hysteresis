@@ -454,3 +454,80 @@ class TestAlgorithmOption:
         finally:
             if entity._algo_handler is not None:
                 entity._algo_handler.remove()
+
+
+# ===========================================================================
+# Group 8: tpi preset end to end
+# ===========================================================================
+CONF_COEF_INT = "coef_int"
+CONF_COEF_EXT = "coef_ext"
+
+
+class TestTpiAlgorithm:
+    """The tpi preset driven through the public sensor/state APIs."""
+
+    async def test_outdoor_updates_modulate_on_percent(
+        self, hass, hass_config_dir, enable_custom_integrations
+    ):
+        """Outdoor temperature changes modulate on_percent via coef_ext."""
+        entity = await _setup_integration(
+            hass,
+            plugin_options={
+                "algorithm": "tpi",
+                CONF_COEF_INT: 1.0,
+                CONF_COEF_EXT: 0.1,
+                CONF_HYSTERESIS_ON: 1.0,
+                CONF_HYSTERESIS_OFF: 0.5,
+            },
+        )
+        try:
+            await set_setpoint(hass, 21.0)
+            # activate below 20.0
+            await set_room_temp(entity, hass, 19.0)
+            diag = diagnostics(hass)
+            assert diag["is_active"] is True
+            assert diag["algorithm"] == "tpi"
+            # coef_int * (21-19) + coef_ext * (21-outdoor=6) = 1.6 -> clamped 1.0
+            assert diag["on_percent"] == pytest.approx(1.0)
+            # outdoor drops to 10 -> 2 + 1.1 = 3.1 -> still clamped; hold in band
+            await set_room_temp(entity, hass, 20.5)
+            entity._current_outdoor_temperature = 10.0
+            await entity.async_control_heating()
+            await hass.async_block_till_done()
+            diag = diagnostics(hass)
+            assert diag["is_active"] is True
+            assert diag["on_percent"] == pytest.approx(1.0)
+            # outdoor rises to 25 -> 0.5 + 0.1*(-4) = 0.1
+            entity._current_outdoor_temperature = 25.0
+            await entity.async_control_heating()
+            await hass.async_block_till_done()
+            diag = diagnostics(hass)
+            assert diag["on_percent"] == pytest.approx(0.1)
+            assert diag["coef_int"] == pytest.approx(1.0)
+            assert diag["coef_ext"] == pytest.approx(0.1)
+        finally:
+            if entity._algo_handler is not None:
+                entity._algo_handler.remove()
+
+    async def test_tpi_taper_inside_band(self, hass, hass_config_dir, enable_custom_integrations):
+        """A held-active TPI request tapers with the remaining deficit."""
+        entity = await _setup_integration(
+            hass,
+            plugin_options={
+                "algorithm": "tpi",
+                CONF_COEF_INT: 0.5,
+                CONF_COEF_EXT: 0.05,
+            },
+        )
+        try:
+            await set_setpoint(hass, 21.0)
+            await set_room_temp(entity, hass, 19.0)
+            # activate, then hold in band at 20.2: 0.5*0.8 + 0.05*6 = 0.7
+            await set_room_temp(entity, hass, 20.2)
+            diag = diagnostics(hass)
+            assert diag["is_active"] is True
+            assert diag["last_reason"] == "hold_in_band"
+            assert diag["on_percent"] == pytest.approx(0.7)
+        finally:
+            if entity._algo_handler is not None:
+                entity._algo_handler.remove()

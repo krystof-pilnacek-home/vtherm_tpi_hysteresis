@@ -12,7 +12,7 @@ The plugin composes a preset algorithm under an optional hysteresis overlay: the
 
 ### Algorithm
 
-The preset algorithm used while regulation is active. `on_off` (default) reproduces the historical relay behaviour: `max_on_percent` while active, `min_on_percent` while inactive. A `tpi` preset is reserved for the follow-up (#4) and is not selectable until then; the `algorithm` option lists all registered presets.
+The preset algorithm used while regulation is active. `on_off` (default) reproduces the historical relay behaviour: `max_on_percent` while active, `min_on_percent` while inactive. The `tpi` preset applies proportional TPI control while regulation is active: `on_percent = clamp(coef_int * (target - current) + coef_ext * (target - outdoor), min_on_percent, max_on_percent)` in heat mode, with the deltas mirrored in cool mode. While inactive it requests `min_on_percent`. The `algorithm` option lists all registered presets.
 
 With `hysteresis_on` and `hysteresis_off` both at `0` the hysteresis band degenerates and the algorithm regulates up to the setpoint directly (plain on/off or proportional control).
 
@@ -40,6 +40,18 @@ The duty-cycle fraction sent to the cycle scheduler when regulation is inactive.
 
 Range: `0.0` – `1.0`. Default: `0.0`.
 
+### Internal coefficient (`coef_int`)
+
+Weight of the room-temperature deficit (`target - current` in heat mode) in the `tpi` preset. Only used when `algorithm` is `tpi`.
+
+Default: `1.0`.
+
+### External coefficient (`coef_ext`)
+
+Weight of the outdoor-temperature deficit (`target - outdoor` in heat mode) in the `tpi` preset. Only used when `algorithm` is `tpi`; without an outdoor sensor the external term is `0`.
+
+Default: `0.1`.
+
 ## Tracking attributes
 
 The controller exposes its latest decision under `specific_states.hysteresis`:
@@ -55,6 +67,8 @@ The controller exposes its latest decision under `specific_states.hysteresis`:
 - `hysteresis_off`
 - `max_on_percent`
 - `min_on_percent`
+- `coef_int`
+- `coef_ext`
 
 ## Configuration modes
 

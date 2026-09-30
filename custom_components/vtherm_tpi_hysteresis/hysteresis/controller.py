@@ -57,6 +57,8 @@ class HysteresisController:
         hysteresis_off: float,
         max_on_percent: float = 1.0,
         min_on_percent: float = 0.0,
+        coef_int: float = 1.0,
+        coef_ext: float = 0.1,
         algorithm: str = "on_off",
         state: HysteresisState | None = None,
     ) -> None:
@@ -65,6 +67,8 @@ class HysteresisController:
         self._hysteresis_off = hysteresis_off
         self._max_on_percent = max_on_percent
         self._min_on_percent = min_on_percent
+        self._coef_int = coef_int
+        self._coef_ext = coef_ext
         self._algorithm = get_algorithm(algorithm)
         self._state = state or HysteresisState()
         if self._min_on_percent > self._max_on_percent:
@@ -100,6 +104,8 @@ class HysteresisController:
                     "is_active": self._state.is_active,
                     "max_on_percent": self._max_on_percent,
                     "min_on_percent": self._min_on_percent,
+                    "coef_int": self._coef_int,
+                    "coef_ext": self._coef_ext,
                 },
             )
         )
@@ -149,6 +155,8 @@ class HysteresisController:
             "hysteresis_off": self._hysteresis_off,
             "max_on_percent": self._max_on_percent,
             "min_on_percent": self._min_on_percent,
+            "coef_int": self._coef_int,
+            "coef_ext": self._coef_ext,
         }
 
     def restore_state(self, data: dict[str, object] | None) -> None:

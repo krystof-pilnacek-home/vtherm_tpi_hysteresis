@@ -10,12 +10,16 @@ from homeassistant.util import slugify
 
 from .const import (
     CONF_ALGORITHM,
+    CONF_COEF_EXT,
+    CONF_COEF_INT,
     CONF_HYSTERESIS_OFF,
     CONF_HYSTERESIS_ON,
     CONF_MAX_ON_PERCENT,
     CONF_MIN_ON_PERCENT,
     CONF_TARGET_VTHERM,
     DEFAULT_ALGORITHM,
+    DEFAULT_COEF_EXT,
+    DEFAULT_COEF_INT,
     DEFAULT_OPTIONS,
     DOMAIN,
     STORAGE_KEY,
@@ -62,6 +66,8 @@ class HysteresisHandler:
             max_on_percent=float(config[CONF_MAX_ON_PERCENT]),
             min_on_percent=float(config[CONF_MIN_ON_PERCENT]),
             algorithm=str(config.get(CONF_ALGORITHM, DEFAULT_ALGORITHM)),
+            coef_int=float(config.get(CONF_COEF_INT, DEFAULT_COEF_INT)),
+            coef_ext=float(config.get(CONF_COEF_EXT, DEFAULT_COEF_EXT)),
         )
         thermostat.prop_algorithm = self._controller
 

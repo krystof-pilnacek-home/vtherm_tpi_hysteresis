@@ -34,6 +34,40 @@ class Algorithm(Protocol):
         """Return the raw on_percent request for the current inputs."""
 
 
+class TpiAlgorithm:
+    """Proportional TPI control law while regulation is active.
+
+    ``on_percent = coef_int * (target - current) + coef_ext * (target - outdoor)``
+    in heat mode, with the deltas mirrored in cool mode. While regulation is
+    inactive the request is ``min_on_percent``. The hysteresis overlay is
+    unchanged: this preset only replaces the flat ``max_on_percent`` request
+    of ``on_off`` while the overlay keeps regulation active.
+    """
+
+    name = "tpi"
+
+    def __call__(
+        self,
+        hvac_mode: str,
+        target_temp: float | None,
+        current_temp: float | None,
+        ext_temp: float | None,
+        params: dict[str, float],
+    ) -> float:
+        if not params.get("is_active", 0.0):
+            return params["min_on_percent"]
+        if target_temp is None or current_temp is None:
+            return params["min_on_percent"]
+        coef_int = params.get("coef_int", 1.0)
+        coef_ext = params.get("coef_ext", 0.1)
+        delta_int = target_temp - current_temp
+        delta_ext = (target_temp - ext_temp) if ext_temp is not None else 0.0
+        if hvac_mode == "cool":
+            delta_int = -delta_int
+            delta_ext = -delta_ext
+        return coef_int * delta_int + coef_ext * delta_ext
+
+
 class OnOffAlgorithm:
     """Historical relay behaviour: full power while active, floor when not.
 
@@ -59,11 +93,10 @@ class OnOffAlgorithm:
         return params["min_on_percent"]
 
 
-#: Registry of preset algorithms selectable by name. The ``tpi`` preset is
-#: deliberately not registered yet: it lands with the TPI follow-up once it
-#: honors the hysteresis overlay (is_active) and the cooling-mode signs.
+#: Registry of preset algorithms selectable by name.
 ALGORITHMS: dict[str, Algorithm] = {
     OnOffAlgorithm.name: OnOffAlgorithm(),
+    TpiAlgorithm.name: TpiAlgorithm(),
 }
 
 

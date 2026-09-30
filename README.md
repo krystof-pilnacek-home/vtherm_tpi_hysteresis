@@ -25,7 +25,7 @@ The plugin composes two independent decisions:
    - heat: activates when `current_temperature <= target_temperature - hysteresis_on`, deactivates when `current_temperature >= target_temperature + hysteresis_off`
    - cool: activates when `current_temperature >= target_temperature + hysteresis_on`, deactivates when `current_temperature <= target_temperature - hysteresis_off`
    - inside the band, the previous relay state is kept
-2. **Algorithm** — decides *how much* power to request while regulation is active. The `on_off` preset (default, identical to the historical relay behaviour) requests `max_on_percent` while active and `min_on_percent` while inactive.
+2. **Algorithm** — decides *how much* power to request while regulation is active. The `on_off` preset (default, identical to the historical relay behaviour) requests `max_on_percent` while active and `min_on_percent` while inactive. The `tpi` preset applies proportional TPI control: `on_percent = clamp(coef_int * (target - current) + coef_ext * (target - outdoor), min_on_percent, max_on_percent)` while active (deltas mirrored in cool mode; `coef_int`/`coef_ext` default to `1.0`/`0.1`).
 
 With both thresholds at `0` the hysteresis band degenerates and the algorithm regulates up to the setpoint directly (on/off or proportional control without hysteresis).
 
@@ -37,8 +37,8 @@ The result is translated to the VT cycle scheduler as a clamped `on_percent`.
 | --- | --- | --- |
 | Relay with hysteresis (default, upstream behaviour) | `on_off` | `> 0` |
 | Plain on/off | `on_off` | `0` |
-| TPI with hysteresis | `tpi` (follow-up #4, not selectable yet) | `> 0` |
-| Plain TPI | `tpi` (follow-up #4, not selectable yet) | `0` |
+| TPI with hysteresis | `tpi` | `> 0` |
+| Plain TPI | `tpi` | `0` |
 
 ## Installation
 
