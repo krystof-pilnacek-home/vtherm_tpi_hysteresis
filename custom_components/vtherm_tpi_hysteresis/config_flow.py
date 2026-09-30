@@ -1,4 +1,4 @@
-"""Config flow for vtherm_hysteresis."""
+"""Config flow for vtherm_tpi_hysteresis."""
 
 from __future__ import annotations
 
